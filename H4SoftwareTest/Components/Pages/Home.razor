@@ -4,12 +4,14 @@
 @inject AuthenticationStateProvider _authenticationStateProvider;
 @* @inject Codes.RoleHandler _roleHandler; *@
 @inject IServiceProvider _serviceProvider;
+@inject Data.TodoDbContext _todoDbContext;
+@inject Codes.HashingHandler _hashingHandler;
 
 <PageTitle>Home</PageTitle>
 
 @if (_isAuthenticated)
 {
-    <h1>Hello, world!</h1>
+    @* <h1>Hello, world!</h1>
     @if (_isAdmin)
     {
         <h2>You are admin</h2>
@@ -17,7 +19,20 @@
     else
     {
         <h2>You are NOT admin</h2>
+    } *@
+    <h1>
+        @_userName
+    </h1>
+    if (!cprWritten)
+    {
+        <div>
+            <div>Indsat cpr-nummer:</div>
+            <input type="text" @bind="userInputCpr" />
+            <button @onclick="cprSubmit">OK</button>
+        </div>
     }
+
+
 }
 else
 {
@@ -30,6 +45,9 @@ else
 @code {
     public bool _isAuthenticated;
     public bool _isAdmin;
+    public string _userName;
+    public string userInputCpr;
+    public bool cprWritten = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -38,8 +56,29 @@ else
         var user = authState.User;
         _isAuthenticated = user.Identity.IsAuthenticated;
         _isAdmin = user.IsInRole("Admin");
+        _userName = user.Identity.Name;
 
         // if (_isAuthenticated)
         //     await _roleHandler.CreateUserRolesAsync(user.Identity.Name, "Admin", _serviceProvider);
+    }
+
+    private void cprSubmit()
+    {
+        var userMatch = _todoDbContext.Cpr.FirstOrDefault(x => x.User == _userName);
+        if (userMatch == null)
+        {
+            var newCpr = new Models.cpr
+            {
+                User = _userName,
+                Cpr = _hashingHandler.BCryptHashing(userInputCpr)
+            };
+            _todoDbContext.Cpr.Add(newCpr);
+            _todoDbContext.SaveChanges();
+            cprWritten = true;
+        }
+        else
+        {
+            
+        }
     }
 }
