@@ -5,6 +5,8 @@ using H4SoftwareTest.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,13 +26,13 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
-//var connectionString = builder.Configuration.GetConnectionString("MockConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+//var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 //builder.Services.AddDbContext<ApplicationDbContext>(options =>
-//    options.UseSqlite(connectionString));
+//    options.UseSqlServer(connectionString));
+
+var connectionString = builder.Configuration.GetConnectionString("MockConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(connectionString));
 
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -62,6 +64,8 @@ builder.Services.AddSingleton<RoleHandler>();
 
 var app = builder.Build();
 
+startupLog();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -86,3 +90,13 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 
 app.Run();
+
+void startupLog()
+{
+    var projectRoot = Directory.GetCurrentDirectory();
+    var filePath = Path.Combine(projectRoot, "startup-log.txt");
+    using (var writer = new StreamWriter(filePath, append: true))
+    {
+        writer.WriteLine($"Application started at: {DateTime.Now}");
+    }
+}
