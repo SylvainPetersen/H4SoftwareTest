@@ -14,6 +14,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Bruges for at alt efter hvilket system der bliver brugt, vil den gå ind i det systems user folder
+string userFile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+userFile = Path.Combine(userFile, ".aspnet");
+userFile = Path.Combine(userFile, "https");
+userFile = Path.Combine(userFile, "Sylvain.pfx");
+
+string kestrelPassword = builder.Configuration.GetValue<string>("KestrelPassword");
+
+
+builder.Configuration.GetSection("Kestrel:Endpoints:Https:Certificate:Path").Value = userFile;
+builder.Configuration.GetSection("Kestrel:Endpoints:Https:Certificate:Password").Value = kestrelPassword;
+
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
