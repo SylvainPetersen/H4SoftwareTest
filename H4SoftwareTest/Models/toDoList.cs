@@ -3,8 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace H4SoftwareTest.Models
 {
-    //id +userid + item, id int(primary), userid int, item nvarchar500
-    public class ToDoList
+    public class toDoList
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

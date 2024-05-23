@@ -3,8 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace H4SoftwareTest.Models
 {
-
-    //id+user+cpr int til id (primary), nvarchar200 til user, nvarchar500 til cpr
     public class cpr
     {
         [Key]

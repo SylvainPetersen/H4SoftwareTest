@@ -31,6 +31,8 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
+builder.Services.AddSingleton<HashingHandler>();
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -77,6 +79,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddSingleton<RoleHandler>();
+builder.Services.AddSingleton<AsymetriskEncryptionHandler>();
 
 var app = builder.Build();
 

@@ -2,24 +2,15 @@
 @* @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AuthenticatedUser")] *@
 
 @inject AuthenticationStateProvider _authenticationStateProvider;
-@* @inject Codes.RoleHandler _roleHandler; *@
 @inject IServiceProvider _serviceProvider;
 @inject Data.TodoDbContext _todoDbContext;
 @inject Codes.HashingHandler _hashingHandler;
+@inject Codes.AsymetriskEncryptionHandler _AsymetriskEncryptionHandler;
 
 <PageTitle>Home</PageTitle>
 
 @if (_isAuthenticated)
 {
-    @* <h1>Hello, world!</h1>
-    @if (_isAdmin)
-    {
-        <h2>You are admin</h2>
-    }
-    else
-    {
-        <h2>You are NOT admin</h2>
-    } *@
     <h1>
         @_userName
     </h1>
@@ -29,6 +20,50 @@
             <div>Indsat cpr-nummer:</div>
             <input type="text" @bind="userInputCpr" />
             <button @onclick="cprSubmit">OK</button>
+            <div>
+                @Message
+            </div>
+        </div>
+    }
+    else
+    {
+        <div>
+            <div>Dit Cpr-nummer er @DbCpr</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            To Do
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if(toDoList != null)
+                    {
+                        @foreach (var toDo in toDoList)
+                        {
+                            <tr>
+                                <td>
+                                    @_AsymetriskEncryptionHandler.DecryptAsymetrisk(toDo.Item)
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else{
+                        <tr>
+                            <td>
+                                @noItems
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <br/>
+        <div>
+            <div>Insert new item:</div>
+            <input type="text" @bind="newItem"/>
+            <button @onclick="itemSubmit">OK</button>
         </div>
     }
 
@@ -45,9 +80,14 @@ else
 @code {
     public bool _isAuthenticated;
     public bool _isAdmin;
-    public string _userName;
-    public string userInputCpr;
+    public string _userName{ get; set; }
+    public string userInputCpr { get; set; }
+    public string newItem { get; set; }
     public bool cprWritten = false;
+    public string? Message { get; set; }
+    public string noItems = "No items inside of the list.";
+    public List<Models.toDoList>? toDoList{ get; set; }
+    public string? DbCpr { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -57,13 +97,15 @@ else
         _isAuthenticated = user.Identity.IsAuthenticated;
         _isAdmin = user.IsInRole("Admin");
         _userName = user.Identity.Name;
-
-        // if (_isAuthenticated)
-        //     await _roleHandler.CreateUserRolesAsync(user.Identity.Name, "Admin", _serviceProvider);
+        toDoList = new List<Models.toDoList>();
     }
 
     private void cprSubmit()
     {
+        if (_todoDbContext == null)
+        {
+            throw new InvalidOperationException("Database context is not available.");
+        }
         var userMatch = _todoDbContext.Cpr.FirstOrDefault(x => x.User == _userName);
         if (userMatch == null)
         {
@@ -75,10 +117,41 @@ else
             _todoDbContext.Cpr.Add(newCpr);
             _todoDbContext.SaveChanges();
             cprWritten = true;
+            DbCpr = newCpr.Cpr;
         }
         else
         {
-            
+            DbCpr = _todoDbContext.Cpr.FirstOrDefault(x => x.User == _userName)?.Cpr;
+            if (_hashingHandler.BCryptVerifyHashing(userInputCpr, DbCpr))
+            {
+                toDoList = _todoDbContext.Todos.Where(x => x.UserId == userMatch.Id).ToList();
+                cprWritten = true;
+            }
+            else
+            {
+                Message = "Cpr-number does not match.";
+            }
         }
+    }
+
+    private void itemSubmit()
+    {
+        if (_todoDbContext == null)
+        {
+            throw new InvalidOperationException("Database context is not available.");
+        }
+        var userMatch = _todoDbContext.Cpr.FirstOrDefault(x => x.User == _userName);
+
+        var newTodo = new Models.toDoList
+        {
+            UserId = userMatch.Id,
+            Item = _AsymetriskEncryptionHandler.EncryptAsymetrisk(newItem)
+        };
+
+        _todoDbContext.Todos.Add(newTodo);
+        _todoDbContext.SaveChanges();
+        
+        toDoList.Add(newTodo);
+        newItem = "";
     }
 }

@@ -7,12 +7,12 @@ namespace H4SoftwareTest.Data
     {
         public TodoDbContext(DbContextOptions<TodoDbContext> options) : base(options) { }
 
-        public DbSet<ToDoList> Todos;
-        public DbSet<cpr> Cpr;
+        public DbSet<toDoList> Todos { get; set; }
+        public DbSet<cpr> Cpr { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<ToDoList>()
+            modelBuilder.Entity<toDoList>()
                 .HasOne(t => t.cpr)
                 .WithMany()
                 .HasForeignKey(t => t.UserId);
